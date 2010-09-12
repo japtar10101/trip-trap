@@ -27,16 +27,9 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 
 public class Deception extends BaseGameActivity implements IOnSceneTouchListener {
-	// ===========================================================
-	// Constants
-	// ===========================================================
-
-	private static final int CAMERA_HEIGHT = 720;
-	private static final int CAMERA_WIDTH = 480;
-
-	// ===========================================================
-	// Fields
-	// ===========================================================
+	/* ===========================================================
+	 * Members
+	 * =========================================================== */
 
 	private Texture mTexture;
 	private TextureRegion mPlayerTextureRegion;
@@ -47,23 +40,15 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 	private final Vector2 mTempForce = new Vector2();
 	private final Vector2 mTempPoint = new Vector2();
 
-	// ===========================================================
-	// Constructors
-	// ===========================================================
-
-	// ===========================================================
-	// Getter & Setter
-	// ===========================================================
-
-	// ===========================================================
-	// Methods for/from SuperClass/Interfaces
-	// ===========================================================
+	/* ===========================================================
+	 * Overrides
+	 * =========================================================== */
 
 	@Override
 	public Engine onLoadEngine() {
-		final Camera camera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		final Camera camera = new Camera(0, 0, GameDimension.CAMERA_WIDTH, GameDimension.CAMERA_HEIGHT);
 		return new Engine(new EngineOptions(true, ScreenOrientation.PORTRAIT,
-				new RatioResolutionPolicy(CAMERA_WIDTH, CAMERA_HEIGHT), camera));
+				new RatioResolutionPolicy(GameDimension.CAMERA_WIDTH, GameDimension.CAMERA_HEIGHT), camera));
 	}
 
 	@Override
@@ -100,7 +85,8 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 	public boolean onSceneTouchEvent(final Scene scene,
 			final TouchEvent sceneTouchEvent) {
 		if(this.mPhysicsWorld != null) {
-			if(sceneTouchEvent.getAction() == MotionEvent.ACTION_DOWN) {
+			final int action = sceneTouchEvent.getAction();
+			if(action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
 				this.runOnUpdateThread(new Runnable() {
 					@Override
 					public void run() {
@@ -113,15 +99,15 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 		return false;
 	}
 	
-	// ===========================================================
-	// Methods
-	// ===========================================================
+	/* ===========================================================
+	 * Private Methods
+	 * =========================================================== */
 	
 	private void setupPlayerSprite(final Scene scene) {
 		// Calculate the coordinates for the face, so its centered on the camera.
-		final int centerX = (CAMERA_WIDTH -
+		final int centerX = (GameDimension.CAMERA_WIDTH -
 				this.mPlayerTextureRegion.getWidth()) / 2;
-		final int centerY = (CAMERA_HEIGHT -
+		final int centerY = (GameDimension.CAMERA_HEIGHT -
 				this.mPlayerTextureRegion.getHeight()) / 2;
 
 		// Create the face and add it to the scene.
@@ -153,8 +139,4 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 		// Pull the player
 		faceBody.applyLinearImpulse(this.mTempForce, this.mTempPoint);
 	}
-	
-	// ===========================================================
-	// Inner and Anonymous Classes
-	// ===========================================================
 }
