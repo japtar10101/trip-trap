@@ -78,14 +78,13 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 
 	@Override
 	public Scene onLoadScene() {
-		final Scene scene = new Scene(1);
+		final Scene scene = new Scene(2);
 		scene.setBackground(new ColorBackground(0.2f, 0.2f, 0.2f));
 		scene.setOnSceneTouchListener(this);
 		
 		// Generate the physics system
 		this.mTempForce.set(0, 0);
-		this.mPhysicsWorld = new PhysicsWorld(this.mTempForce, false);
-		this.mPhysicsWorld.setGravity(mTempForce);
+		this.mPhysicsWorld = new PhysicsWorld(this.mTempForce, true);
 		scene.registerUpdateHandler(this.mPhysicsWorld);
 		
 		// Generate the player sprite
@@ -144,8 +143,8 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 		// Force the velocity to be "pulled" into the direction touched
 		mTempPoint.set(targetX, targetY);
 		mTempForce.set(
-				mPlayer.getX() - targetX,
-				mPlayer.getY() - targetY);
+				targetX - mPlayer.getX(),
+				targetY - mPlayer.getY());
 		
 		// Grab the body associated with the player
 		final Body faceBody = this.mPhysicsWorld.
