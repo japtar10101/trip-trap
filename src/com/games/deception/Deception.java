@@ -19,8 +19,6 @@ import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
 import org.anddev.andengine.ui.activity.BaseGameActivity;
 
-import android.view.MotionEvent;
-
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
@@ -37,8 +35,9 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 	
 	private PhysicsWorld mPhysicsWorld;
 	
-	private final Vector2 mTempForce = new Vector2();
-	private final Vector2 mTempPoint = new Vector2();
+	private final Vector2 mTempVector = new Vector2();
+	
+	private PlayerControl mControls = null;
 
 	/* ===========================================================
 	 * Overrides
@@ -68,12 +67,14 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 		scene.setOnSceneTouchListener(this);
 		
 		// Generate the physics system
-		this.mTempForce.set(0, 0);
-		this.mPhysicsWorld = new PhysicsWorld(this.mTempForce, true);
+		this.mTempVector.set(0, 0);
+		this.mPhysicsWorld = new PhysicsWorld(this.mTempVector, true);
 		scene.registerUpdateHandler(this.mPhysicsWorld);
 		
 		// Generate the player sprite
 		setupPlayerSprite(scene);
+		mControls = PlayerControl.startController(this.mPhysicsWorld.
+				getPhysicsConnectorManager().findBodyByShape(this.mPlayer));
 		
 		return scene;
 	}
@@ -84,19 +85,17 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 	@Override
 	public boolean onSceneTouchEvent(final Scene scene,
 			final TouchEvent sceneTouchEvent) {
-		if(this.mPhysicsWorld != null) {
-			final int action = sceneTouchEvent.getAction();
-			if(action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
-				this.runOnUpdateThread(new Runnable() {
-					@Override
-					public void run() {
-						Deception.this.pullPlayer(sceneTouchEvent.getX(), sceneTouchEvent.getY());
-					}
-				});
-				return true;
+		boolean validAction = false;
+		
+		if(mControls != null) {
+			validAction = mControls.setTouchEvent(sceneTouchEvent);
+
+			if(validAction) {
+				this.runOnUpdateThread(mControls);
 			}
 		}
-		return false;
+		
+		return validAction;
 	}
 	
 	/* ===========================================================
@@ -123,20 +122,5 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 		scene.getTopLayer().addEntity(this.mPlayer);
 		this.mPhysicsWorld.registerPhysicsConnector(new PhysicsConnector(
 				this.mPlayer, body, true, true, false, false));
-	}
-	
-	private void pullPlayer(final float targetX, final float targetY) {
-		// Force the velocity to be "pulled" into the direction touched
-		mTempPoint.set(targetX, targetY);
-		mTempForce.set(
-				targetX - mPlayer.getX(),
-				targetY - mPlayer.getY());
-		
-		// Grab the body associated with the player
-		final Body faceBody = this.mPhysicsWorld.
-			getPhysicsConnectorManager().findBodyByShape(this.mPlayer);
-		
-		// Pull the player
-		faceBody.applyLinearImpulse(this.mTempForce, this.mTempPoint);
 	}
 }

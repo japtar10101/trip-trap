@@ -7,32 +7,45 @@ import android.view.MotionEvent;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 
+/**
+ * Singleton class.  Controls the player's physics body.
+ * @author japtar10101
+ */
 public class PlayerControl implements Runnable {
 	/* ===========================================================
 	 * Members
 	 * =========================================================== */
 	
+	/** Singleton variable */
+	private static PlayerControl msController = null;
+	
 	// Temporary variables
+	/** The most recent touch event */
 	private int mRecentAction;
+	/** The most recently touch point */
 	private final Vector2 mRecentTarget;
 	
 	// Variables to update at run
+	/** If true, move the player to the point */
 	private boolean mMoveToTarget;
+	/** The point the player will move to */
 	private final Vector2 mTargetPoint;
+	/** The amount of force used to pull the player to the target */
 	private final Vector2 mTargetForce;
 	
-	/** The body affected by player's action */
+	// Physics-related variable
+	/** The body affected by player's action. Can be null. */
 	private Body mPhysicsBody;
 	
 	/* ===========================================================
 	 * Constructors
 	 * =========================================================== */
 	
-	public PlayerControl() {
-		this(null);
-	}
-	
-	public PlayerControl(final Body physicsBody) {
+	/**
+	 * Constructor.
+	 * @param physicsBody sets mPhysicsBody
+	 */
+	private PlayerControl(final Body physicsBody) {
 		// Set the primary variables to their default value
 		mRecentAction = MotionEvent.ACTION_CANCEL;
 		mMoveToTarget = false;
@@ -49,6 +62,7 @@ public class PlayerControl implements Runnable {
 	 * Overrides
 	 * =========================================================== */
 	
+	/** Updates the PlayerControl's coordinates */
 	@Override
 	public void run() {
 		switch(mRecentAction) {
@@ -61,23 +75,115 @@ public class PlayerControl implements Runnable {
 			break;
 			
 		case MotionEvent.ACTION_UP:
+		case MotionEvent.ACTION_CANCEL:
+		case MotionEvent.ACTION_OUTSIDE:
 			mMoveToTarget = false;
 			break;
-			
 		}
-		// TODO Auto-generated method stub
-
 	}
 	
 	/* ===========================================================
 	 * Public Methods
 	 * =========================================================== */
 	
-	public void setTouchEvent(final TouchEvent sceneTouchEvent) {
-		if(sceneTouchEvent != null) {
-			mRecentAction = sceneTouchEvent.getAction();
-			mRecentTarget.set(sceneTouchEvent.getX(), sceneTouchEvent.getY());
+	/** @param physicsBody body to control
+	  * @return msController */
+	public static PlayerControl startController(final Body physicsBody) {
+		if(msController == null) {
+			msController = new PlayerControl(physicsBody);
+		} else {
+			msController.setPhysicsBody(physicsBody);
 		}
+		return msController;
+	}
+	
+	/** Terminates controls on any sprite */
+	public static void endController() {
+		startController(null);
+	}
+	
+	/** Helper function that determines the type of action
+	 * this controller recognizes
+	 * @return true if the action is recognized, else false */
+	public static boolean isActionValid(final int action) {
+		switch(action) {
+		
+		case MotionEvent.ACTION_UP:
+		case MotionEvent.ACTION_MOVE:
+		case MotionEvent.ACTION_DOWN:
+		case MotionEvent.ACTION_CANCEL:
+		case MotionEvent.ACTION_OUTSIDE:
+			return true;
+		
+		default:
+			return false;
+		}
+	}
+	
+	/** Updates coordinates based on touch event */
+	public boolean setTouchEvent(final TouchEvent sceneTouchEvent) {
+		boolean validAction = false;
+		
+		if(sceneTouchEvent != null && mPhysicsBody != null) {
+			final int action = sceneTouchEvent.getAction();
+			validAction = isActionValid(action);
+			
+			if(validAction) {
+				this.setRecentAction(action);
+				this.setRecentTarget(sceneTouchEvent.getX(), sceneTouchEvent.getY());
+			}
+		}
+		
+		return validAction;
+	}
+	
+	/** Updated the player's position */
+	private void movePlayer() {
+		if(mMoveToTarget && mPhysicsBody != null) {
+			this.pullPlayer();
+		}
+	}
+	
+	/* ===========================================================
+	 * Getters
+	 * =========================================================== */
+	
+	/** @return msController */
+	public static PlayerControl getController() {
+		if(msController == null) {
+			startController(null);
+		}
+		return msController;
+	}
+	
+	/** @return mRecentTarget */
+	public Vector2 getRecentAction() {
+		return mRecentTarget;
+	}
+	
+	/** @return mPhysicsBody */
+	public Body getPhysicsBody() {
+		return mPhysicsBody;
+	}
+	
+	/* ===========================================================
+	 * Setters
+	 * =========================================================== */
+	
+	/** @param action sets mRecentAction */
+	public void setRecentAction(final int action) {
+		mRecentAction = action;
+	}
+	
+	/** @param targetX sets mRecentTarget's x-coordinate
+	  * @param targetY sets mRecentTarget's y-coordinate */
+	public void setRecentTarget(final float targetX, final float targetY) {
+		mRecentTarget.set(targetX, targetY);
+	}
+	
+	/** @param physicsBody sets mPhysicsBody */
+	public void setPhysicsBody(Body physicsBody) {
+		mPhysicsBody = physicsBody;
 	}
 	
 	/* ===========================================================
@@ -85,23 +191,14 @@ public class PlayerControl implements Runnable {
 	 * =========================================================== */
 	
 	private void pullPlayer() {
+		// Determine the amount of force necessary to push the player
+		mTargetForce.set(mPhysicsBody.getPosition());
+		mTargetForce.set(mTargetPoint.x - mTargetForce.x,
+				mTargetPoint.y - mTargetForce.y);
 		
+		// TODO: proption and limit the amount of force applicable
+		
+		// Apply the force to the body
+		mPhysicsBody.applyLinearImpulse(mTargetForce, mTargetPoint);
 	}
-	/*
-	private void pullPlayer(final float targetX, final float targetY) {
-		// Force the velocity to be "pulled" into the direction touched
-		mTempPoint.set(targetX, targetY);
-		mTempForce.set(
-				targetX - mPlayer.getX(),
-				targetY - mPlayer.getY());
-		
-		// Grab the body associated with the player
-		final Body faceBody = this.mPhysicsWorld.
-			getPhysicsConnectorManager().findBodyByShape(this.mPlayer);
-		
-		// Pull the player
-		faceBody.applyLinearImpulse(this.mTempForce, this.mTempPoint);
-	}
-	*/
-
 }
