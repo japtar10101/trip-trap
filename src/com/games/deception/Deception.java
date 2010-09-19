@@ -73,8 +73,10 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 		
 		// Generate the player sprite
 		setupPlayerSprite(scene);
-		mControls = PlayerControl.startController(this.mPhysicsWorld.
-				getPhysicsConnectorManager().findBodyByShape(this.mPlayer));
+		final Body playerBody = this.mPhysicsWorld.
+				getPhysicsConnectorManager().findBodyByShape(this.mPlayer);
+		playerBody.setLinearDamping(1f);
+		mControls = PlayerControl.startController(playerBody);
 		
 		return scene;
 	}

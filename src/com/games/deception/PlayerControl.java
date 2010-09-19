@@ -80,6 +80,7 @@ public class PlayerControl implements Runnable {
 			mMoveToTarget = false;
 			break;
 		}
+		movePlayer();
 	}
 	
 	/* ===========================================================
@@ -193,10 +194,13 @@ public class PlayerControl implements Runnable {
 	private void pullPlayer() {
 		// Determine the amount of force necessary to push the player
 		mTargetForce.set(mPhysicsBody.getPosition());
-		mTargetForce.set(mTargetPoint.x - mTargetForce.x,
-				mTargetPoint.y - mTargetForce.y);
+		mTargetForce.set(mTargetForce.x - mTargetPoint.x,
+				mTargetForce.y - mTargetPoint.y);
 		
 		// TODO: proption and limit the amount of force applicable
+		// FIXME: normalizing for testing purposes
+		final float magnitude = mTargetForce.dst(0, 0);
+		mTargetForce.mul(1f/magnitude);
 		
 		// Apply the force to the body
 		mPhysicsBody.applyLinearImpulse(mTargetForce, mTargetPoint);
