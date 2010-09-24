@@ -1,19 +1,21 @@
 package com.games.deception.singleton;
 
-import org.anddev.andengine.entity.sprite.Sprite;
-import org.anddev.andengine.input.touch.detector.HoldDetector;
-import org.anddev.andengine.input.touch.detector.HoldDetector.IHoldDetectorListener;
+import org.anddev.andengine.engine.handler.IUpdateHandler;
+import org.anddev.andengine.entity.scene.Scene;
+import org.anddev.andengine.entity.scene.Scene.IOnSceneTouchListener;
+import org.anddev.andengine.input.touch.TouchEvent;
+
+import android.view.MotionEvent;
 
 import com.badlogic.gdx.math.Vector2;
-import com.games.deception.element.BaseElement;
+import com.games.deception.element.controllable.ControllableElement;
 
-// TODO: if this doesn't work, try copying HoldDetector
-// FIXME: Nope, this does not work.  Turn it into a IOnSceneTouchListener and IUpdateHandler
+//TODO: take a better look at HoldDetector
 /**
  * Singleton class.  Controls the player's physics body.
  * @author japtar10101
  */
-public class PullPlayerController implements IHoldDetectorListener {
+public class PullPlayerController implements IUpdateHandler, IOnSceneTouchListener {
 	/* ===========================================================
 	 * Members
 	 * =========================================================== */
@@ -31,49 +33,79 @@ public class PullPlayerController implements IHoldDetectorListener {
 	
 	// Physics-related variable
 	/** The body affected by player's action. Can be null. */
-	private BaseElement mElement;
+	private ControllableElement mElement;
 	
 	/* ===========================================================
 	 * Constructors
 	 * =========================================================== */
 	
 	/**
-	 * Constructor.
-	 * @param physicsBody sets mPhysicsBody
+	 * Constructor.  Sets {@link mElement} to null.
 	 */
 	private PullPlayerController() {
-		// Set the primary variables to their default value
-		mIsMovingToTarget = false;
-		
 		// Construct vectors
 		mTargetPoint = new Vector2();
 		mTargetForce = new Vector2();
 		
 		// Set sprite related stuff to null
-		mElement = null;
+		this.setElement(null);
 	}
 	
 	/* ===========================================================
 	 * Overrides
 	 * =========================================================== */
 	
+	/**
+	 * Determines the state to take based on a touch event
+	 * @param scene not used
+	 * @param sceneTouchEvent the condition of the user's action
+	 * @return true if any action took placed; false, otherwise.
+	 */
 	@Override
-	public void onHold(HoldDetector pHoldDetector, long holdTimeMilliseconds,
-			float holdX, float holdY) {
-		if(mElement != null) {
-			mIsMovingToTarget = true;
-			mTargetPoint.set(holdX, holdY);
+	public boolean onSceneTouchEvent(final Scene scene,
+			final TouchEvent sceneTouchEvent) {
+		// If element is null, ignore all actions
+		if(mElement == null)
+			return false;
+		
+		// Otherwise, determine which action to take, if any
+		boolean validAction = true;
+		switch(sceneTouchEvent.getAction()) {
+			case MotionEvent.ACTION_DOWN:
+			case MotionEvent.ACTION_MOVE:
+				this.startHold(
+						sceneTouchEvent.getX(), sceneTouchEvent.getY());
+				break;
+			case MotionEvent.ACTION_UP:
+			case MotionEvent.ACTION_CANCEL:
+				this.endHold();
+				break;
+			default:
+				validAction = false;
+		}
+		return validAction;
+	}
+	
+	/**
+	 * Progressively moves the player to where one touched.
+	 * @param pSecondsElapsed not used
+	 */
+	@Override
+	public void onUpdate(final float pSecondsElapsed) {
+		// Update the player's position when holding onto screen
+		if(mElement != null && mIsMovingToTarget == true && Float.compare(pSecondsElapsed, 0.01f) > 0) {
 			this.updateForce();
 			this.movePlayer();
 		}
 	}
-
+	
+	/**
+	 * Defaults the player's controls
+	 * @see PullPlayerController
+	 */
 	@Override
-	public void onHoldFinished(HoldDetector pHoldDetector,
-			long pHoldTimeMilliseconds, float pHoldX, float pHoldY) {
-		if(mElement != null) {
-			mIsMovingToTarget = false;
-		}
+	public void reset() {
+		this.setElement(null);
 	}
 	
 	/* ===========================================================
@@ -92,19 +124,6 @@ public class PullPlayerController implements IHoldDetectorListener {
 		    }
 		  }
 		  return msInstance;
-	}
-	
-	/** @param element the element to control
-	  * @return {@link msInstance} */
-	public static PullPlayerController startController(final BaseElement element) {
-		PullPlayerController toReturn = PullPlayerController.getInstance();
-		toReturn.setElement(element);
-		return toReturn;
-	}
-	
-	/** Terminates controls */
-	public static void endController() {
-		startController(null);
 	}
 	
 	/* ===========================================================
@@ -133,7 +152,7 @@ public class PullPlayerController implements IHoldDetectorListener {
 	}
 
 	/** @return {@link mElement} */
-	public BaseElement getElement() {
+	public ControllableElement getElement() {
 		return mElement;
 	}
 	
@@ -142,8 +161,11 @@ public class PullPlayerController implements IHoldDetectorListener {
 	 * =========================================================== */
 
 	/** @param physicsBody sets {@link mElement} */
-	public void setElement(BaseElement element) {
+	public void setElement(ControllableElement element) {
 		mElement = element;
+		if(element == null) {
+			mIsMovingToTarget = false;
+		}
 	}
 	
 	/* ===========================================================
@@ -153,18 +175,27 @@ public class PullPlayerController implements IHoldDetectorListener {
 	/** Updates {@link mTargetForce} */
 	private void updateForce() {
 		// Determine the amount of force necessary to push the player
-		final Sprite playerPos = mElement.getSprite();
+		mTargetForce.set(mElement.getFront());
 		
-		// TODO: proportion and limit the amount of force applicable
-		mTargetForce.set(playerPos.getBaseX() - mTargetPoint.x,
-				playerPos.getBaseY() - mTargetPoint.y);
-		//final float magnitude = mTargetForce.dst(0, 0);
+		// proportion the amount of force applicable
+		mTargetForce.x = mTargetPoint.x - mTargetForce.x;
+		mTargetForce.y = mTargetPoint.y - mTargetForce.y;
 	}
 	
 	/** Pulls the player to the {@link mTargetPoint} */
 	private void movePlayer() {		
 		// Apply the force to the body
-		mElement.getPhysicsBody().applyLinearImpulse(
-				mTargetForce, mTargetPoint);
+		mElement.getPhysicsBody().applyLinearImpulse(mTargetForce, mElement.getFront());
+	}
+	
+	/** Initiates or updates the hold condition */
+	private void startHold(float holdX, float holdY) {
+		mIsMovingToTarget = true;
+		mTargetPoint.set(holdX, holdY);
+	}
+
+	/** Ends the hold condition */
+	private void endHold() {
+		mIsMovingToTarget = false;
 	}
 }

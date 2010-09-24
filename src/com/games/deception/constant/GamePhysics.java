@@ -9,5 +9,5 @@ public interface GamePhysics {
 	 * Constants
 	 * =========================================================== */
 	public static final PhysicsWorld PHYSICS_WORLD =
-		new PhysicsWorld(new Vector2(0,0), true);
+		new PhysicsWorld(new Vector2(0,0), false);
 }

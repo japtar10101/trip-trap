@@ -5,13 +5,10 @@ import org.anddev.andengine.engine.camera.Camera;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
 import org.anddev.andengine.entity.scene.Scene;
-import org.anddev.andengine.entity.scene.Scene.IOnSceneTouchListener;
 import org.anddev.andengine.entity.scene.background.ColorBackground;
 import org.anddev.andengine.entity.sprite.Sprite;
 import org.anddev.andengine.extension.physics.box2d.PhysicsConnector;
 import org.anddev.andengine.extension.physics.box2d.PhysicsFactory;
-import org.anddev.andengine.input.touch.TouchEvent;
-import org.anddev.andengine.input.touch.detector.HoldDetector;
 import org.anddev.andengine.opengl.texture.Texture;
 import org.anddev.andengine.opengl.texture.TextureOptions;
 import org.anddev.andengine.opengl.texture.region.TextureRegion;
@@ -27,7 +24,7 @@ import com.games.deception.constant.GamePhysics;
 import com.games.deception.element.controllable.Marble;
 import com.games.deception.singleton.PullPlayerController;
 
-public class Deception extends BaseGameActivity implements IOnSceneTouchListener {
+public class Deception extends BaseGameActivity {
 	/* ===========================================================
 	 * Members
 	 * =========================================================== */
@@ -40,8 +37,6 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 	
 	private PullPlayerController mControls = null;
 	
-	private HoldDetector mHold = null;
-
 	/* ===========================================================
 	 * Overrides
 	 * =========================================================== */
@@ -67,7 +62,6 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 	public Scene onLoadScene() {
 		final Scene scene = new Scene(2);
 		scene.setBackground(new ColorBackground(0.2f, 0.2f, 0.2f));
-		scene.setOnSceneTouchListener(this);
 		
 		// Generate the physics system
 		this.mTempVector.set(0, 0);
@@ -77,41 +71,20 @@ public class Deception extends BaseGameActivity implements IOnSceneTouchListener
 		setupPlayerSprite(scene);
 		final Body playerBody = GamePhysics.PHYSICS_WORLD.
 				getPhysicsConnectorManager().findBodyByShape(this.mPlayer);
-		playerBody.setLinearDamping(1f);
-		this.mControls = PullPlayerController.startController(
-				new Marble(this.mPlayer, playerBody));
+		playerBody.setLinearDamping(5f);
+		playerBody.setAngularDamping(5f);
 		
-		//mHold = new HoldDetector(mControls);
-		///*
-		mHold = new HoldDetector(mControls) {
-			@Override
-			public void onUpdate(final float pSecondsElapsed) {
-				super.onUpdate(pSecondsElapsed);
-				this.fireListener();
-			}
-		};
-		//*/
-		
-		scene.registerUpdateHandler(mHold);
+		// Setup controls
+		this.mControls = PullPlayerController.getInstance();
+		this.mControls.setElement(new Marble(this.mPlayer, playerBody));
+		scene.registerUpdateHandler(mControls);
+		scene.setOnSceneTouchListener(mControls);
 		
 		return scene;
 	}
 
 	@Override
 	public void onLoadComplete() {}
-	
-	@Override
-	public boolean onSceneTouchEvent(final Scene scene,
-			final TouchEvent sceneTouchEvent) {
-		boolean validAction = false;
-		
-		if(mControls != null && mHold != null) {
-			validAction = mHold.onTouchEvent(sceneTouchEvent);
-			mControls.onHold(null, 0, 0, 0);
-		}
-		
-		return validAction;
-	}
 	
 	/* ===========================================================
 	 * Private Methods
