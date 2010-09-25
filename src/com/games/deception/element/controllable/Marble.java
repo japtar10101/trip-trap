@@ -5,10 +5,14 @@ import org.anddev.andengine.entity.sprite.Sprite;
 import com.badlogic.gdx.physics.box2d.Body;
 
 public class Marble extends ControllableElement {
-	public Marble(final Sprite sprite, final Body physicsBody) {
-		mSprite = sprite;
-		mPhysicsBody = physicsBody;
-		
-		mHealth = 3;
-	}
+    /**
+     * TODO: add a description
+     * @param sprite
+     * @param physicsBody
+     */
+    public Marble(final Sprite sprite, final Body physicsBody) {
+        super(0.01f, 20f, (byte) 3);
+        mSprite = sprite;
+        mPhysicsBody = physicsBody;
+    }
 }
