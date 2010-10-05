@@ -22,11 +22,11 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.MassData;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.games.deception.behavior.AttractToControllableBehavior;
+import com.games.deception.behavior.controller.PullPlayerController;
 import com.games.deception.constant.GameDimension;
 import com.games.deception.constant.GamePhysics;
 import com.games.deception.element.controllable.Bee;
 import com.games.deception.element.controllable.Marble;
-import com.games.deception.singleton.PullPlayerController;
 
 public class Deception extends BaseGameActivity {
 	/* ===========================================================

@@ -1,4 +1,4 @@
-package com.games.deception.singleton;
+package com.games.deception.behavior.controller;
 
 import org.anddev.andengine.engine.handler.IUpdateHandler;
 import org.anddev.andengine.entity.scene.Scene;
