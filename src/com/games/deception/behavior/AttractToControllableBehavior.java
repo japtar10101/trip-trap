@@ -5,8 +5,6 @@ package com.games.deception.behavior;
 
 import java.util.LinkedList;
 
-import org.anddev.andengine.engine.handler.IUpdateHandler;
-
 import com.badlogic.gdx.math.Vector2;
 import com.games.deception.element.controllable.ControllableElement;
 
@@ -16,15 +14,20 @@ import com.games.deception.element.controllable.ControllableElement;
  * TODO: This also shares similarities to PullPlayerController
  * @author japtar10101
  */
-public class AttractToControllableBehavior implements
-		IUpdateHandler {
+public class AttractToControllableBehavior extends BaseBehavior {
+	/* ===========================================================
+	 * Constants
+	 * =========================================================== */
+	
+	final private LinkedList<ControllableElement> mBehavingElements =
+		new LinkedList<ControllableElement>();
+	final private Vector2 mTempVector = new Vector2();
+
 	/* ===========================================================
 	 * Members
 	 * =========================================================== */
 	
 	private ControllableElement mAttractedTo;
-	final private LinkedList<ControllableElement> mBehavingElements;
-	final Vector2 mTempVector = new Vector2();
 
 	/* ===========================================================
 	 * Constructors
@@ -32,23 +35,12 @@ public class AttractToControllableBehavior implements
 	
 	public AttractToControllableBehavior(final ControllableElement attraction) {
 		mAttractedTo = attraction;
-		mBehavingElements = new LinkedList<ControllableElement>();
 	}
 
 	/* ===========================================================
 	 * Overrides
 	 * =========================================================== */
 	
-	/**
-	 * TODO: add a description
-	 * @see org.anddev.andengine.engine.handler.IUpdateHandler#onUpdate(float)
-	 */
-	@Override
-	public void onUpdate(float pSecondsElapsed) {
-		if(mAttractedTo != null) {
-			attraction();
-		}
-	}
 	/**
 	 * TODO: add a description
 	 * @see org.anddev.andengine.engine.handler.IUpdateHandler#reset()
@@ -59,6 +51,38 @@ public class AttractToControllableBehavior implements
 		mBehavingElements.clear();
 	}
 	
+	@Override
+	public boolean isEnabled() {
+		return mAttractedTo == null;
+	}
+	
+	@Override
+	protected void behave(float secondsElapsed) {
+		
+		// Find the attraction point
+		final Vector2 attractionPos = mAttractedTo.getMiddle();
+		
+		// Move every element
+		for(final ControllableElement element : mBehavingElements) {
+			
+			// Check the distance of target to element
+			mTempVector.set(element.getFront());
+			if(Float.compare(mTempVector.dst(attractionPos), 0.01f) >= 0) {
+				
+				// Calculate the direction
+				mTempVector.x = attractionPos.x - mTempVector.x;
+				mTempVector.y = attractionPos.y - mTempVector.y;
+				
+				// Apply maximum force
+				mTempVector.nor();
+				mTempVector.mul(element.MaxSpeed);
+				
+				// Apply force to the body, if force is greater than 0
+				element.getPhysicsBody().applyLinearImpulse(
+						mTempVector, element.getMiddle());
+			}
+		}
+	}
 	/* ===========================================================
 	 * Public Methods
 	 * =========================================================== */
@@ -102,40 +126,5 @@ public class AttractToControllableBehavior implements
 	 */
 	public void setAttractedTo(ControllableElement AttractedTo) {
 		this.mAttractedTo = AttractedTo;
-	}
-	
-	/* ===========================================================
-	 * Private/Protected Methods
-	 * =========================================================== */
-	
-	private void attraction() {
-		final Vector2 attractionPos = mAttractedTo.getMiddle();
-		for(ControllableElement ele : mBehavingElements) {
-			// TODO: refactor this part to its own "attraction" class
-			mTempVector.set(attractionPos);
-			mTempVector.sub(ele.getFront());
-			
-			// lower the magnitude of the force
-			float magnitude = mTempVector.dst(0, 0);
-			magnitude *= ele.SpeedMultiplier;
-			if(magnitude > ele.MaxSpeed) {
-				magnitude = ele.MaxSpeed;
-			}
-			
-			// Apply the magnitude to force
-			if(Float.compare(magnitude, 0.001f) <= 0) {
-				mTempVector.set(0, 0);
-			} else {
-				mTempVector.nor();
-				mTempVector.mul(magnitude);
-			}
-				
-			// Apply force to the body, if force is greater than 0
-			if(Float.compare(mTempVector.x, 0) != 0 &&
-					Float.compare(mTempVector.y, 0) != 0) {
-				ele.getPhysicsBody().applyLinearImpulse(
-						mTempVector, ele.getMiddle());
-			}
-		}
 	}
 }
