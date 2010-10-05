@@ -11,7 +11,7 @@ public class Marble extends ControllableElement {
 	 * @param physicsBody
 	 */
 	public Marble(final Sprite sprite, final Body physicsBody) {
-		super(0.05f, 20f, (byte) 3);
+		super(0.5f, 40f, (byte) 3);
 		mSprite = sprite;
 		mPhysicsBody = physicsBody;
 	}

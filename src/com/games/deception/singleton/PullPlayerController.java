@@ -13,9 +13,12 @@ import com.games.deception.element.controllable.ControllableElement;
 //TODO: take a better look at HoldDetector
 /**
  * Singleton class.  Controls the player's physics body.
+ * 
+ *  TODO: this is technically a behavior as well.  Consider refactoring as such
  * @author japtar10101
  */
-public class PullPlayerController implements IUpdateHandler, IOnSceneTouchListener {
+public class PullPlayerController implements
+		IUpdateHandler, IOnSceneTouchListener {
 	/* ===========================================================
 	 * Constants
 	 * =========================================================== */
@@ -197,13 +200,11 @@ public class PullPlayerController implements IUpdateHandler, IOnSceneTouchListen
 	 * =========================================================== */
 	
 	/** Updates {@link mTargetForce} */
+	// TODO: refactor this part to its own "attraction" class
 	private void updateForce() {
 		// Determine the amount of force necessary to push the player
-		mTargetForce.set(mElement.getFront());
-		
-		// proportion the amount of force applicable
-		mTargetForce.x = mTargetPoint.x - mTargetForce.x;
-		mTargetForce.y = mTargetPoint.y - mTargetForce.y;
+		mTargetForce.set(mTargetPoint);
+		mTargetForce.sub(mElement.getFront());
 		
 		// lower the magnitude of the force
 		float magnitude = mTargetForce.dst(0, 0);
@@ -227,7 +228,7 @@ public class PullPlayerController implements IUpdateHandler, IOnSceneTouchListen
 		if(Float.compare(mTargetForce.x, 0) != 0 &&
 				Float.compare(mTargetForce.y, 0) != 0) {
 			mElement.getPhysicsBody().applyLinearImpulse(
-					mTargetForce, mElement.getMiddle());
+					mTargetForce, mElement.getFront());
 		}
 		
 		// Straighten the body
