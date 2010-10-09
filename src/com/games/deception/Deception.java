@@ -25,6 +25,7 @@ import com.games.deception.behavior.AttractToControllableBehavior;
 import com.games.deception.behavior.controller.PullPlayerController;
 import com.games.deception.constant.GameDimension;
 import com.games.deception.constant.GamePhysics;
+import com.games.deception.element.Wall;
 import com.games.deception.element.controllable.Bee;
 import com.games.deception.element.controllable.Marble;
 
@@ -33,22 +34,29 @@ public class Deception extends BaseGameActivity {
 	 * Constants
 	 * =========================================================== */
 	
-	static final byte NUM_BEES = 4;
+	private static final byte NUM_BEES = 4;
+	private static final byte NUM_WALLS = 5;
 	
 	/* ===========================================================
 	 * Members
 	 * =========================================================== */
 
 	// TODO: accumulate these 4 stuff into a Model (Model-View-Controller)
+	// Textures goes under a flyweight design, as well as fixtures
 	private Texture mMarbleTexture;
 	private TextureRegion mMarbleTextureRegion;
+	// Sprite and body should be held individually
 	private Sprite mMarbleSprite;
 	private Body mMarbleBody;
+	// Remember we need to parse and generate these things (possibly
+	// a factory design)
 
 	private Texture mBeeTexture;
 	private TextureRegion mBeeTextureRegion;
 	private Sprite mBeeSprite[] = new Sprite[NUM_BEES];
 	private Body mBeeBody[] = new Body[NUM_BEES];
+	
+	private Wall mWall[] = new Wall[NUM_WALLS];
 
 	// TODO: refactor these so that they share a common class
 	private AttractToControllableBehavior mBehavior = null;
@@ -82,6 +90,7 @@ public class Deception extends BaseGameActivity {
 		// Generate the player sprite
 		setupMarbleSprite(scene);
 		setupBeeSprite(scene);
+		setupWalls(scene);
 		
 		// Setup controls
 		final Marble marble = new Marble(mMarbleSprite, mMarbleBody);
@@ -90,7 +99,8 @@ public class Deception extends BaseGameActivity {
 		scene.registerUpdateHandler(mControls);
 		scene.setOnSceneTouchListener(mControls);
 		
-		//Setup behavior
+		//Setup behavior		//mWalls
+
 		mBehavior = new AttractToControllableBehavior(marble);
 		for(byte index = 0; index < NUM_BEES; index++) {
 			mBehavior.addElement(new Bee(mBeeSprite[index], mBeeBody[index]));
@@ -106,7 +116,7 @@ public class Deception extends BaseGameActivity {
 	/* ===========================================================
 	 * Private Methods
 	 * =========================================================== */
-	
+		
 	private void setupMarbleTexture() {
 		mMarbleTexture = new Texture(64, 64, TextureOptions.BILINEAR);
 		TextureRegionFactory.setAssetBasePath("images/");
@@ -142,7 +152,7 @@ public class Deception extends BaseGameActivity {
 		mMarbleBody = PhysicsFactory.createCircleBody(GamePhysics.PHYSICS_WORLD,
 				mMarbleSprite, BodyType.DynamicBody, objectFixtureDef);
 		mMarbleBody.setLinearDamping(5f);
-		mMarbleBody.setAngularDamping(5f);
+		mMarbleBody.setAngularDamping(1f);
 		final MassData massData = new MassData();
 		massData.mass = 8;
 		mMarbleBody.setMassData(massData);
@@ -164,8 +174,8 @@ public class Deception extends BaseGameActivity {
 		for(byte index = 0; index < NUM_BEES; index++) {
 			// Create the face and add it to the scene.
 			mBeeSprite[index] = new Sprite(
-					generator.nextInt(GameDimension.CAMERA_WIDTH),
-					generator.nextInt(GameDimension.CAMERA_HEIGHT),
+					generator.nextInt(GameDimension.CAMERA_WIDTH - 64) + 32,
+					generator.nextInt(GameDimension.CAMERA_HEIGHT - 64) + 32,
 					mBeeTextureRegion);
 			scene.getTopLayer().addEntity(mBeeSprite[index]);
 			
@@ -181,5 +191,35 @@ public class Deception extends BaseGameActivity {
 			GamePhysics.PHYSICS_WORLD.registerPhysicsConnector(new PhysicsConnector(
 					mBeeSprite[index], mBeeBody[index], true, true, false, false));
 		}
+	}
+	
+	/**
+	 * TODO: add a description
+	 * @param scene
+	 */
+	private void setupWalls(Scene scene) {
+		byte index = 0;
+		mWall[index] = new Wall(0, GameDimension.CAMERA_HEIGHT - 2,
+				GameDimension.CAMERA_WIDTH, 2);
+		scene.getTopLayer().addEntity(mWall[index].getSprite());
+		
+		++index;
+		mWall[index] = new Wall(0, 0, GameDimension.CAMERA_WIDTH, 2);
+		scene.getTopLayer().addEntity(mWall[index].getSprite());
+		
+		++index;
+		mWall[index] = new Wall(0, 0, 2, GameDimension.CAMERA_HEIGHT);
+		scene.getTopLayer().addEntity(mWall[index].getSprite());
+		
+		++index;
+		mWall[index] = new Wall(GameDimension.CAMERA_WIDTH - 2, 0,
+				2, GameDimension.CAMERA_HEIGHT);
+		scene.getTopLayer().addEntity(mWall[index].getSprite());
+		
+		++index;
+		final int halfWidth = GameDimension.CAMERA_WIDTH / 2;
+		final int halfHeight = GameDimension.CAMERA_HEIGHT / 2;
+		mWall[index] = new Wall(halfWidth - 16, halfHeight - 16, 32, 32);
+		scene.getTopLayer().addEntity(mWall[index].getSprite());
 	}
 }

@@ -53,7 +53,7 @@ public class AttractToControllableBehavior extends BaseBehavior {
 	
 	@Override
 	public boolean isEnabled() {
-		return mAttractedTo == null;
+		return mAttractedTo != null;
 	}
 	
 	@Override

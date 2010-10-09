@@ -1,6 +1,6 @@
 package com.games.deception.element;
 
-import org.anddev.andengine.entity.sprite.Sprite;
+import org.anddev.andengine.entity.shape.Shape;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -14,7 +14,7 @@ public abstract class BaseElement {
 	protected Body mPhysicsBody = null;
 	
 	/** Sprite of this element. */
-	protected Sprite mSprite = null;
+	protected Shape mSprite = null;
 	
 	/** TODO: add a description */
 	final private Vector2 mTempVector = new Vector2();
@@ -40,8 +40,9 @@ public abstract class BaseElement {
 	public Body getPhysicsBody() {
 		return mPhysicsBody;
 	}
+	
 	/** @return {@link mSprite}. */
-	public Sprite getSprite() {
+	public Shape getSprite() {
 		return mSprite;
 	}
 	

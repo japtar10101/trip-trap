@@ -6,7 +6,8 @@ package com.games.deception.behavior;
 import org.anddev.andengine.engine.handler.IUpdateHandler;
 
 /**
- * TODO: add a description
+ * If I can't come up with any behavior-related things, I might
+ * as well destroy this class.
  * @author japtar10101
  */
 public abstract class BaseBehavior implements IUpdateHandler {
