@@ -10,7 +10,7 @@ import android.view.MotionEvent;
 import com.badlogic.gdx.math.Vector2;
 import com.games.deception.element.controllable.ControllableElement;
 
-//TODO: take a better look at HoldDetector
+//TODO: take a better look at HoldDetector. This class is too slow.
 /**
  * Singleton class.  Controls the player's physics body.
  * 

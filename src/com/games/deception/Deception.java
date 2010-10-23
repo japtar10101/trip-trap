@@ -57,6 +57,8 @@ public class Deception extends BaseGameActivity {
 	private Body mBeeBody[] = new Body[NUM_BEES];
 	
 	private Wall mWall[] = new Wall[NUM_WALLS];
+	
+	private Camera mCamera;
 
 	// TODO: refactor these so that they share a common class
 	private AttractToControllableBehavior mBehavior = null;
@@ -68,9 +70,11 @@ public class Deception extends BaseGameActivity {
 
 	@Override
 	public Engine onLoadEngine() {
-		final Camera camera = new Camera(0, 0, GameDimension.CAMERA_WIDTH, GameDimension.CAMERA_HEIGHT);
+		mCamera = new Camera(0, 0, GameDimension.CAMERA_WIDTH,
+				GameDimension.CAMERA_HEIGHT);
 		return new Engine(new EngineOptions(true, GameDimension.ORIENTATION,
-				new RatioResolutionPolicy(GameDimension.CAMERA_WIDTH, GameDimension.CAMERA_HEIGHT), camera));
+				new RatioResolutionPolicy(GameDimension.CAMERA_WIDTH,
+						GameDimension.CAMERA_HEIGHT), mCamera));
 	}
 
 	@Override
@@ -92,6 +96,9 @@ public class Deception extends BaseGameActivity {
 		setupBeeSprite(scene);
 		setupWalls(scene);
 		
+		// Have the camera chase the player
+		mCamera.setChaseShape(mMarbleSprite);
+		
 		// Setup controls
 		final Marble marble = new Marble(mMarbleSprite, mMarbleBody);
 		mControls = PullPlayerController.getInstance();
@@ -99,8 +106,7 @@ public class Deception extends BaseGameActivity {
 		scene.registerUpdateHandler(mControls);
 		scene.setOnSceneTouchListener(mControls);
 		
-		//Setup behavior		//mWalls
-
+		//Setup behavior
 		mBehavior = new AttractToControllableBehavior(marble);
 		for(byte index = 0; index < NUM_BEES; index++) {
 			mBehavior.addElement(new Bee(mBeeSprite[index], mBeeBody[index]));
@@ -138,9 +144,9 @@ public class Deception extends BaseGameActivity {
 	private void setupMarbleSprite(final Scene scene) {
 		// Calculate the coordinates for the face, so its centered on the camera.
 		final int centerX = (GameDimension.CAMERA_WIDTH -
-				mMarbleTextureRegion.getWidth()) / 2;
+				mMarbleTextureRegion.getWidth()) / 4;
 		final int centerY = (GameDimension.CAMERA_HEIGHT -
-				mMarbleTextureRegion.getHeight()) / 2;
+				mMarbleTextureRegion.getHeight()) / 4;
 
 		// Create the face and add it to the scene.
 		mMarbleSprite = new Sprite(centerX, centerY, mMarbleTextureRegion);
