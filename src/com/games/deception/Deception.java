@@ -6,6 +6,7 @@ import org.anddev.andengine.engine.Engine;
 import org.anddev.andengine.engine.camera.Camera;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
+import org.anddev.andengine.entity.layer.ILayer;
 import org.anddev.andengine.entity.scene.Scene;
 import org.anddev.andengine.entity.scene.background.ColorBackground;
 import org.anddev.andengine.entity.sprite.Sprite;
@@ -22,9 +23,11 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.MassData;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.games.deception.behavior.AttractToControllableBehavior;
+import com.games.deception.behavior.HarmBehavior;
 import com.games.deception.behavior.controller.PullPlayerController;
 import com.games.deception.constant.GameDimension;
 import com.games.deception.constant.GamePhysics;
+import com.games.deception.element.Trap;
 import com.games.deception.element.Wall;
 import com.games.deception.element.controllable.Bee;
 import com.games.deception.element.controllable.Marble;
@@ -35,7 +38,7 @@ public class Deception extends BaseGameActivity {
 	 * =========================================================== */
 	
 	private static final byte NUM_BEES = 4;
-	private static final byte NUM_WALLS = 5;
+	private static final byte NUM_WALLS = 4;
 	
 	/* ===========================================================
 	 * Members
@@ -46,6 +49,7 @@ public class Deception extends BaseGameActivity {
 	private Texture mMarbleTexture;
 	private TextureRegion mMarbleTextureRegion;
 	// Sprite and body should be held individually
+	// Then again, a Fixture does the same thing...
 	private Sprite mMarbleSprite;
 	private Body mMarbleBody;
 	// Remember we need to parse and generate these things (possibly
@@ -56,6 +60,11 @@ public class Deception extends BaseGameActivity {
 	private Sprite mBeeSprite[] = new Sprite[NUM_BEES];
 	private Body mBeeBody[] = new Body[NUM_BEES];
 	
+	private Texture mTrapTexture;
+	private TextureRegion mTrapTextureRegion;
+	private Sprite mTrapSprite;
+	private Body mTrapBody;
+	
 	private Wall mWall[] = new Wall[NUM_WALLS];
 	
 	private Camera mCamera;
@@ -63,6 +72,9 @@ public class Deception extends BaseGameActivity {
 	// TODO: refactor these so that they share a common class
 	private AttractToControllableBehavior mBehavior = null;
 	private PullPlayerController mControls = null;
+	private HarmBehavior mHarm = null;
+	
+	private Scene mScene;
 	
 	/* ===========================================================
 	 * Overrides
@@ -80,21 +92,23 @@ public class Deception extends BaseGameActivity {
 	@Override
 	public void onLoadResources() {
 		setupMarbleTexture();
+		setupTrapTexture();
 		setupBeeTexture();
 	}
 
 	@Override
 	public Scene onLoadScene() {
-		final Scene scene = new Scene(2);
-		scene.setBackground(new ColorBackground(0.2f, 0.2f, 0.2f));
+		mScene = new Scene(2);
+		mScene.setBackground(new ColorBackground(0.2f, 0.2f, 0.2f));
 		
 		// Generate the physics system
-		scene.registerUpdateHandler(GamePhysics.PHYSICS_WORLD);
+		mScene.registerUpdateHandler(GamePhysics.PHYSICS_WORLD);
 		
 		// Generate the player sprite
-		setupMarbleSprite(scene);
-		setupBeeSprite(scene);
-		setupWalls(scene);
+		setupMarbleSprite(mScene);
+		setupBeeSprite(mScene);
+		setupWalls(mScene);
+		setupTraps(mScene);
 		
 		// Have the camera chase the player
 		mCamera.setChaseShape(mMarbleSprite);
@@ -103,21 +117,44 @@ public class Deception extends BaseGameActivity {
 		final Marble marble = new Marble(mMarbleSprite, mMarbleBody);
 		mControls = PullPlayerController.getInstance();
 		mControls.setElement(marble);
-		scene.registerUpdateHandler(mControls);
-		scene.setOnSceneTouchListener(mControls);
+		mScene.registerUpdateHandler(mControls);
+		mScene.setOnSceneTouchListener(mControls);
 		
-		//Setup behavior
+		// Setup bee behavior
+		final Bee[] bees = new Bee[NUM_BEES];
 		mBehavior = new AttractToControllableBehavior(marble);
 		for(byte index = 0; index < NUM_BEES; index++) {
-			mBehavior.addElement(new Bee(mBeeSprite[index], mBeeBody[index]));
+			bees[index] = new Bee(mBeeSprite[index], mBeeBody[index]);
 		}
-		scene.registerUpdateHandler(mBehavior);
+		mBehavior.addElement(bees);
+		mScene.registerUpdateHandler(mBehavior);
 		
-		return scene;
+		// Setup Trap
+		final Trap trap = new Trap(mTrapSprite, mTrapBody);
+		mHarm = new HarmBehavior(this, mScene.getTopLayer());
+		mHarm.addHarmfulElement(trap);
+		mHarm.addVulnerableElement(bees);
+		GamePhysics.PHYSICS_WORLD.setContactListener(mHarm);
+		
+		return mScene;
 	}
 
 	@Override
-	public void onLoadComplete() {}
+	public void onLoadComplete() {
+		// FIXME: testing, remove
+		for(int index = 0; index < NUM_BEES; ++index) {
+			PhysicsConnector facePhysicsConnector = GamePhysics.PHYSICS_WORLD.
+				getPhysicsConnectorManager().findPhysicsConnectorByShape(
+					mBeeSprite[index]);
+	
+			GamePhysics.PHYSICS_WORLD.unregisterPhysicsConnector(
+					facePhysicsConnector);
+			GamePhysics.PHYSICS_WORLD.destroyBody(
+					facePhysicsConnector.getBody());
+			
+			mScene.getTopLayer().removeEntity(mBeeSprite[index]);
+		}
+	}
 	
 	/* ===========================================================
 	 * Private Methods
@@ -139,6 +176,15 @@ public class Deception extends BaseGameActivity {
 		mBeeTextureRegion = TextureRegionFactory.createFromAsset(
 				mBeeTexture, this, "beeBase.png", 0, 0); // 64x64
 		mEngine.getTextureManager().loadTexture(mBeeTexture);
+	}
+	
+	private void setupTrapTexture() {
+		mTrapTexture = new Texture(64, 64, TextureOptions.BILINEAR);
+		TextureRegionFactory.setAssetBasePath("images/");
+		
+		mTrapTextureRegion = TextureRegionFactory.createFromAsset(
+				mTrapTexture, this, "trapBase.png", 0, 0); // 64x64
+		mEngine.getTextureManager().loadTexture(mTrapTexture);
 	}
 	
 	private void setupMarbleSprite(final Scene scene) {
@@ -221,11 +267,33 @@ public class Deception extends BaseGameActivity {
 		mWall[index] = new Wall(GameDimension.CAMERA_WIDTH - 2, 0,
 				2, GameDimension.CAMERA_HEIGHT);
 		scene.getTopLayer().addEntity(mWall[index].getSprite());
+	}
+	
+	/**
+	 * TODO: add a description
+	 * @param scene
+	 */
+	private void setupTraps(Scene scene) {
+		// Calculate the coordinates for the face, so its centered on the camera.
+		final int centerX = (GameDimension.CAMERA_WIDTH -
+				mTrapTextureRegion.getWidth()) / 2;
+		final int centerY = (GameDimension.CAMERA_HEIGHT -
+				mTrapTextureRegion.getHeight()) / 2;
+
+		// Create the face and add it to the scene.
+		mTrapSprite = new Sprite(centerX, centerY, mTrapTextureRegion);
+		scene.getTopLayer().addEntity(mTrapSprite);
 		
-		++index;
-		final int halfWidth = GameDimension.CAMERA_WIDTH / 2;
-		final int halfHeight = GameDimension.CAMERA_HEIGHT / 2;
-		mWall[index] = new Wall(halfWidth - 16, halfHeight - 16, 32, 32);
-		scene.getTopLayer().addEntity(mWall[index].getSprite());
+		// Create a physics body
+		final FixtureDef objectFixtureDef =
+			PhysicsFactory.createFixtureDef(1, 0.5f, 0.5f);
+		mTrapBody = PhysicsFactory.createCircleBody(GamePhysics.PHYSICS_WORLD,
+				mTrapSprite, BodyType.StaticBody, objectFixtureDef);
+		
+		// Associate the physics body with physics world and sprite
+		mTrapSprite.setUpdatePhysics(false);
+		scene.getTopLayer().addEntity(mTrapSprite);
+		GamePhysics.PHYSICS_WORLD.registerPhysicsConnector(new PhysicsConnector(
+				mTrapSprite, mTrapBody, true, true, false, false));
 	}
 }

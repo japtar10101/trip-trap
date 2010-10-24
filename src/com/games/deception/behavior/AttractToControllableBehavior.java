@@ -87,12 +87,16 @@ public class AttractToControllableBehavior extends BaseBehavior {
 	 * Public Methods
 	 * =========================================================== */
 	
-	public void addElement(final ControllableElement ele) {
-		mBehavingElements.add(ele);
+	public void addElement(final ControllableElement ... elements) {
+		for(ControllableElement ele : elements) {
+			mBehavingElements.add(ele);
+		}
 	}
 
-	public void removeElement(final ControllableElement ele) {
-		mBehavingElements.remove(ele);
+	public void removeElement(final ControllableElement ... elements) {
+		for(ControllableElement ele : elements) {
+			mBehavingElements.remove(ele);
+		}
 	}
 	
 	public void clearElements() {

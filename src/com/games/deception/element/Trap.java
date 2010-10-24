@@ -3,6 +3,10 @@
  */
 package com.games.deception.element;
 
+import org.anddev.andengine.entity.sprite.Sprite;
+
+import com.badlogic.gdx.physics.box2d.Body;
+
 /**
  * TODO: add a description
  * @author japtar10101
@@ -19,7 +23,12 @@ public class Trap extends BaseElement {
 	/* ===========================================================
 	 * Constructors
 	 * =========================================================== */
-
+	public Trap(final Sprite sprite, final Body physicsBody) {
+		super();
+		mSprite = sprite;
+		mPhysicsBody = physicsBody;
+	}
+	
 	/* ===========================================================
 	 * Overrides
 	 * =========================================================== */
